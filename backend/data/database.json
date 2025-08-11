@@ -1,0 +1,113 @@
+{
+  "doctors": [
+    {
+      "id": 1,
+      "name": "Dr. Sarah Smith",
+      "specialty": "General Medicine",
+      "available_times": [
+        "2025-08-09T09:00:00.000Z",
+        "2025-08-09T10:00:00.000Z",
+        "2025-08-09T14:00:00.000Z",
+        "2025-08-09T15:00:00.000Z",
+        "2025-08-10T09:00:00.000Z",
+        "2025-08-10T11:00:00.000Z"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Dr. Michael Khan",
+      "specialty": "Cardiology",
+      "available_times": [
+        "2025-08-09T08:00:00.000Z",
+        "2025-08-09T13:00:00.000Z",
+        "2025-08-09T16:00:00.000Z",
+        "2025-08-10T10:00:00.000Z",
+        "2025-08-10T14:00:00.000Z",
+        "2025-08-11T09:00:00.000Z"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Dr. Emily Johnson",
+      "specialty": "Dermatology",
+      "available_times": [
+        "2025-08-09T11:00:00.000Z",
+        "2025-08-09T15:00:00.000Z",
+        "2025-08-10T08:00:00.000Z",
+        "2025-08-10T12:00:00.000Z",
+        "2025-08-11T10:00:00.000Z",
+        "2025-08-11T14:00:00.000Z"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Dr. Robert Chen",
+      "specialty": "Pediatrics",
+      "available_times": [
+        "2025-08-09T12:00:00.000Z",
+        "2025-08-09T17:00:00.000Z",
+        "2025-08-10T09:00:00.000Z",
+        "2025-08-10T13:00:00.000Z",
+        "2025-08-11T11:00:00.000Z",
+        "2025-08-11T15:00:00.000Z"
+      ]
+    }
+  ],
+  "appointments": [
+    {
+      "id": 1,
+      "patient_name": "John Doe",
+      "doctor_id": 1,
+      "doctor_name": "Dr. Sarah Smith",
+      "appointment_time": "2025-08-09T09:00:00.000Z",
+      "status": "confirmed",
+      "reason": "Annual checkup",
+      "session_id": "session-example-123"
+    },
+    {
+      "id": 2,
+      "patient_name": "Jane Wilson",
+      "doctor_id": 2,
+      "doctor_name": "Dr. Michael Khan",
+      "appointment_time": "2025-08-09T13:00:00.000Z",
+      "status": "confirmed",
+      "reason": "Cardiology consultation",
+      "session_id": "session-example-456"
+    }
+  ],
+  "hr_policies": {
+    "vacation_days": 20,
+    "sick_days": 10,
+    "personal_days": 3,
+    "holidays": [
+      "New Year's Day",
+      "Independence Day",
+      "Labor Day",
+      "Thanksgiving",
+      "Christmas Day"
+    ],
+    "work_hours": "9:00 AM - 5:00 PM",
+    "remote_work": "Up to 3 days per week with manager approval",
+    "benefits": {
+      "health_insurance": "80% company coverage",
+      "dental": "Full coverage",
+      "vision": "Full coverage",
+      "401k_match": "4% with immediate vesting",
+      "life_insurance": "2x annual salary"
+    }
+  },
+  "company_info": {
+    "name": "TechCorp Solutions",
+    "address": "123 Business Ave, Tech City, TC 12345",
+    "phone": "(555) 123-4567",
+    "email": "info@techcorp.com",
+    "departments": [
+      "Human Resources",
+      "Engineering",
+      "Sales",
+      "Marketing",
+      "Finance",
+      "Customer Support"
+    ]
+  }
+}

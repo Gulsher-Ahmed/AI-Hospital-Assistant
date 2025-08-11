@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Call Center - Backend Context Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-header {
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .clear-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .message-content {
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 70%;
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+        }
+
+        .agent-info {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .message.user .agent-info {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .message-text {
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: rgba(248, 250, 252, 0.8);
+            border-top: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            resize: none;
+            outline: none;
+            transition: all 0.2s;
+            background: white;
+            font-family: inherit;
+            min-height: 44px;
+            max-height: 120px;
+        }
+
+        .chat-input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #64748b;
+            animation: typingBounce 1.5s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .session-info {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-align: center;
+            padding: 8px;
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        /* Error styling */
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .chat-container {
+                height: 90vh;
+                border-radius: 15px;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 AI Call Center</h1>
+            <p>Professional Backend Context Management</p>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span id="statusText">Backend Connected</span>
+                <button class="clear-button" onclick="clearConversation()">Clear Chat</button>
+            </div>
+        </div>
+        
+        <div class="session-info">
+            Session ID: <span id="sessionId">Loading...</span> | Messages: <span id="messageCount">0</span>
+        </div>
+        
+        <div class="chat-messages" id="messagesContainer">
+            <div class="message assistant">
+                <div class="message-avatar">AI</div>
+                <div class="message-content">
+                    <div class="agent-info">Greeting Agent</div>
+                    <div class="message-text">Hello! Welcome to our AI call center with proper backend context management. I'll remember our entire conversation through the session. What can I help you with today?</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <textarea 
+                    id="messageInput" 
+                    class="chat-input" 
+                    placeholder="Type your message here..."
+                    rows="1"
+                ></textarea>
+                <button id="sendButton" class="send-button" onclick="sendMessage()">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            BACKEND_URL: 'http://localhost:3001',
+            USE_MOCK_MODE: false // Using real backend
+        };
+
+        // Global state
+        let currentSessionId = '';
+        let messageCount = 0;
+        let isWaitingForResponse = false;
+        let conversationHistory = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSession();
+            setupEventListeners();
+            updateUI();
+        });
+
+        function initializeSession() {
+            // Generate a unique session ID
+            currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            document.getElementById('sessionId').textContent = currentSessionId;
+            
+            // Initialize conversation with backend greeting
+            conversationHistory = [
+                {
+                    role: 'assistant',
+                    content: 'Hello! Welcome to our AI call center with proper backend context management. I\'ll remember our entire conversation through the session. What can I help you with today?',
+                    agent: 'greeting',
+                    timestamp: new Date().toISOString()
+                }
+            ];
+            
+            console.log('🔄 Session initialized:', currentSessionId);
+            updateStatusIndicator();
+        }
+
+        function setupEventListeners() {
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Send on Enter (but allow Shift+Enter for new lines)
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Send button click
+            sendButton.addEventListener('click', sendMessage);
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+
+            if (!message || isWaitingForResponse) return;
+
+            // Add user message to UI and history
+            addMessageToUI(message, 'user');
+            addMessageToHistory(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            isWaitingForResponse = true;
+            updateUI();
+
+            try {
+                let response;
+                
+                if (CONFIG.USE_MOCK_MODE) {
+                    response = await getMockResponse(message);
+                } else {
+                    response = await getBackendResponse(message);
+                }
+
+                // Add assistant response
+                addMessageToUI(response.message, 'assistant', response.agent);
+                addMessageToHistory(response.message, 'assistant', response.agent);
+
+                // Update conversation history if provided by backend
+                if (response.conversationHistory) {
+                    conversationHistory = response.conversationHistory;
+                }
+
+            } catch (error) {
+                console.error('❌ Error sending message:', error);
+                addErrorMessage('Sorry, I encountered an error. Please try again.');
+            } finally {
+                isWaitingForResponse = false;
+                updateUI();
+            }
+        }
+
+        async function getBackendResponse(message) {
+            const payload = {
+                message: message,
+                sessionId: currentSessionId,
+                conversationHistory: conversationHistory
+            };
+
+            console.log('📤 Sending to backend:', payload);
+
+            const response = await fetch(`${CONFIG.BACKEND_URL}/api/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('📥 Backend response:', data);
+
+            return {
+                message: data.message,
+                agent: data.agent,
+                conversationHistory: data.conversationHistory,
+                context: data.context
+            };
+        }
+
+        async function getMockResponse(message) {
+            console.log('🎭 Using mock mode for message:', message);
+            
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
+
+            const messageLower = message.toLowerCase();
+            
+            // Extract name from conversation for personalization
+            const userName = extractUserNameFromHistory();
+            const greeting = userName ? `Hi ${userName}! ` : "Hello! ";
+
+            // Context-aware responses based on conversation history
+            if (conversationHistory.length > 2) {
+                // We have some conversation context
+                if (messageLower.includes('my name is') || messageLower.includes('i\'m ') || messageLower.includes('call me')) {
+                    const nameMatch = message.match(/(?:my name is|i'm|call me|i am)\s+([a-zA-Z]+)/i);
+                    if (nameMatch) {
+                        return {
+                            message: `Nice to meet you, ${nameMatch[1]}! I'll remember your name for our conversation. How can I help you today?`,
+                            agent: 'greeting'
+                        };
+                    }
+                }
+                
+                if (messageLower.includes('remember') || messageLower.includes('earlier')) {
+                    return {
+                        message: `${greeting}Yes, I remember our conversation! I can see we've discussed ${Math.floor(conversationHistory.length / 2)} topics. What would you like to know about?`,
+                        agent: 'fallback'
+                    };
+                }
+            }
+
+            // Route to appropriate agent based on intent
+            if (messageLower.includes('appointment') || messageLower.includes('doctor') || messageLower.includes('schedule')) {
+                return {
+                    message: `${greeting}I'd be happy to help you with appointment scheduling! We have doctors available for General Medicine, Cardiology, Dermatology, and Pediatrics. What type of appointment are you looking for?`,
+                    agent: 'appointment'
+                };
+            }
+
+            if (messageLower.includes('hr') || messageLower.includes('leave') || messageLower.includes('benefits') || messageLower.includes('timesheet')) {
+                return {
+                    message: `${greeting}I can help with HR questions! I can assist with leave policies, benefits information, timesheet questions, and company policies. What specific HR topic can I help you with?`,
+                    agent: 'hr'
+                };
+            }
+
+            if (messageLower.includes('goodbye') || messageLower.includes('bye') || messageLower.includes('thanks') || messageLower.includes('thank you')) {
+                return {
+                    message: `${greeting}Thank you for contacting our AI call center! It was great helping you today. Feel free to reach out anytime if you need assistance. Have a wonderful day!`,
+                    agent: 'closing'
+                };
+            }
+
+            // Default greeting/general response
+            return {
+                message: `${greeting}I understand you're looking for help. I can assist with doctor appointments, HR questions, or general inquiries. Could you tell me more about what you need today?`,
+                agent: 'fallback'
+            };
+        }
+
+        function extractUserNameFromHistory() {
+            for (const msg of conversationHistory) {
+                if (msg.role === 'user') {
+                    const content = msg.content.toLowerCase();
+                    
+                    // Common patterns: "my name is X", "I'm X", "this is X", "call me X"
+                    const namePatterns = [
+                        /(?:my name is|i'm|this is|call me|i am)\s+([a-zA-Z]+)/i,
+                        /^([a-zA-Z]+)\s+here/i,  // "John here"
+                        /^hi,?\s+([a-zA-Z]+)/i   // "Hi John" or "Hi, John"
+                    ];
+
+                    for (const pattern of namePatterns) {
+                        const match = msg.content.match(pattern);
+                        if (match && match[1] && match[1].length > 1) {
+                            // Capitalize first letter
+                            return match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function addMessageToHistory(content, role, agent = null) {
+            const historyEntry = {
+                role: role,
+                content: content,
+                timestamp: new Date().toISOString()
+            };
+            
+            if (agent) {
+                historyEntry.agent = agent;
+            }
+            
+            conversationHistory.push(historyEntry);
+            console.log('📝 Added to history:', historyEntry);
+        }
+
+        function addMessageToUI(content, role, agent = null) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = role === 'user' ? 'You' : 'AI';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (agent && role === 'assistant') {
+                const agentInfo = document.createElement('div');
+                agentInfo.className = 'agent-info';
+                agentInfo.textContent = `${agent.charAt(0).toUpperCase() + agent.slice(1)} Agent`;
+                messageContent.appendChild(agentInfo);
+            }
+            
+            const messageText = document.createElement('div');
+            messageText.className = 'message-text';
+            messageText.textContent = content;
+            messageContent.appendChild(messageText);
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Update message count
+            if (role === 'user') {
+                messageCount++;
+                document.getElementById('messageCount').textContent = messageCount;
+            }
+        }
+
+        function addErrorMessage(errorText) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = errorText;
+            
+            messagesContainer.appendChild(errorDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function updateUI() {
+            const sendButton = document.getElementById('sendButton');
+            const messageInput = document.getElementById('messageInput');
+            
+            sendButton.disabled = isWaitingForResponse;
+            sendButton.textContent = isWaitingForResponse ? 'Thinking...' : 'Send';
+            messageInput.disabled = isWaitingForResponse;
+        }
+
+        function updateStatusIndicator() {
+            const statusText = document.getElementById('statusText');
+            
+            if (CONFIG.USE_MOCK_MODE) {
+                statusText.textContent = 'Mock Mode';
+            } else {
+                // Test backend connection
+                fetch(`${CONFIG.BACKEND_URL}/health`)
+                    .then(response => {
+                        if (response.ok) {
+                            statusText.textContent = 'Backend Connected';
+                        } else {
+                            statusText.textContent = 'Backend Error';
+                        }
+                    })
+                    .catch(error => {
+                        statusText.textContent = 'Backend Offline';
+                    });
+            }
+        }
+
+        function clearConversation() {
+            if (confirm('Are you sure you want to clear the conversation? This will start a fresh session.')) {
+                // Clear UI
+                const messagesContainer = document.getElementById('messagesContainer');
+                messagesContainer.innerHTML = '';
+                
+                // Reset state
+                messageCount = 0;
+                document.getElementById('messageCount').textContent = '0';
+                
+                // Initialize new session
+                initializeSession();
+                
+                // Add welcome message
+                addMessageToUI(
+                    'Hello! I\'ve started a fresh session. I\'m ready to help you with appointments, HR questions, or any other assistance you need. What can I do for you today?',
+                    'assistant',
+                    'greeting'
+                );
+                
+                console.log('🔄 Conversation cleared, new session started');
+            }
+        }
+
+        // Initialize status indicator on load
+        setTimeout(updateStatusIndicator, 1000);
+    </script>
+</body>
+</html>

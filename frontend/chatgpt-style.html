@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City General Hospital - AI Medical Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .status {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .online-indicator {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+        }
+
+        /* Main Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem;
+        }
+
+        /* Welcome Section */
+        .welcome-section {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #fff, #f0f9ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            max-height: 70vh;
+        }
+
+        /* Chat Messages */
+        .chat-messages {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            max-width: 85%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message.ai .message-avatar {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .message-content {
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 18px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            line-height: 1.6;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        /* Appointment Slots */
+        .appointment-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .slot-container {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slot-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .slot-container.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .slot-time {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .slot-doctor {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .slot-department {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .slot-date {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .slot-container.selected .slot-date {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        /* Input Container */
+        .input-container {
+            padding: 1.5rem 2rem;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: #f9fafb;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 1rem;
+            padding: 0.5rem 0;
+        }
+
+        .message-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Department Pills */
+        .department-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .department-pill {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            color: #0369a1;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .department-pill:hover {
+            background: linear-gradient(135deg, #0369a1, #0284c7);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Loading animation */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 1rem 1.5rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .welcome-title {
+                font-size: 2rem;
+            }
+            
+            .appointment-slots {
+                grid-template-columns: 1fr;
+            }
+            
+            .message {
+                max-width: 95%;
+            }
+        }
+
+        /* ChatGPT-like Interface Styles */
+        .ai-interface {
+            display: flex;
+            height: 100vh;
+            background: #f9f9f9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #202123;
+            color: #ececf1;
+            border-right: 1px solid #4d4d4f;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #4d4d4f;
+        }
+
+        .sidebar-header h3 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .sidebar-header p {
+            margin: 0;
+            font-size: 12px;
+            color: #8e8ea0;
+        }
+
+        .department-card {
+            padding: 12px 20px;
+            margin: 2px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.1s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .department-card:hover {
+            background: #2a2b32;
+        }
+
+        .department-info {
+            flex: 1;
+        }
+
+        .department-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+            color: #fff;
+        }
+
+        .department-desc {
+            font-size: 12px;
+            color: #8e8ea0;
+        }
+
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
+
+        .chat-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d2d2d;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .message {
+            padding: 16px 24px;
+            display: flex;
+            gap: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .message:last-child {
+            border-bottom: none;
+        }
+
+        .user-message {
+            background: #f7f7f8;
+        }
+
+        .message-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .ai-avatar {
+            background: #10a37f;
+            color: white;
+        }
+
+        .user-avatar {
+            background: #5436da;
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            line-height: 1.6;
+            color: #374151;
+        }
+
+        .input-section {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e5e5;
+            background: #fff;
+        }
+
+        .input-wrapper {
+            max-width: 48rem;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        #message-input {
+            flex: 1;
+            min-height: 44px;
+            max-height: 200px;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            resize: none;
+            outline: none;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #fff;
+            transition: border-color 0.1s ease;
+        }
+
+        #message-input:focus {
+            border-color: #10a37f;
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: none;
+            background: #10a37f;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #0d9268;
+        }
+
+        .send-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        /* Department Badge - No Emojis */
+        .department-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            color: #374151;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Appointment Cards - Clean Design */
+        .appointment-section {
+            margin: 20px 0;
+        }
+
+        .appointment-section h4 {
+            color: #374151;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .appointment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .appointment-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .appointment-card:hover {
+            border-color: #10a37f;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .apt-header {
+            margin-bottom: 12px;
+        }
+
+        .apt-doctor {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .apt-specialty {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .apt-time {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .apt-date {
+            font-weight: 500;
+            color: #374151;
+            font-size: 13px;
+        }
+
+        .apt-time-slot {
+            background: #10a37f;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .apt-action {
+            text-align: center;
+            color: #10a37f;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Suggestions - Clean Design */
+        .suggestions-section {
+            margin: 16px 0;
+        }
+
+        .suggestions-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            font-size: 12px;
+            color: #374151;
+        }
+
+        .suggestion-card:hover {
+            background: #10a37f;
+            color: white;
+            border-color: #10a37f;
+        }
+
+        /* Quick Actions - Clean Design */
+        .quick-actions {
+            margin: 16px 0;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+        }
+
+        .action-button {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            text-align: center;
+            font-size: 12px;
+            color: #374151;
+        }
+
+        .action-button:hover {
+            border-color: #10a37f;
+            background: #f0fdf4;
+        }
+
+        /* Welcome Message - Clean Design */
+        .welcome-message {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .welcome-message h3 {
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .welcome-message ul {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .welcome-message li {
+            margin-bottom: 8px;
+            color: #475569;
+        }
+
+        /* Response Types */
+        .message.success .message-content {
+            background: #f0fdf4;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #22c55e;
+        }
+
+        .message.error .message-content {
+            background: #fef2f2;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #ef4444;
+        }
+
+        /* Typing Animation */
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .ai-interface {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+            
+            .appointment-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Clean ChatGPT-like Interface -->
+    <div class="ai-interface">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>City General Hospital</h3>
+                <p>Medical Departments</p>
+            </div>
+            <div id="departments-container"></div>
+        </div>
+        
+        <div class="main-chat">
+            <div class="chat-header">
+                <h2>AI Medical Assistant</h2>
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span>Online</span>
+                </div>
+            </div>
+            
+            <div id="chat-container" class="chat-messages"></div>
+            
+            <div class="input-section">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="message-input" 
+                        placeholder="Ask about symptoms, book appointments, or get medical advice..."
+                        rows="1"
+                    ></textarea>
+                    <button id="send-button" class="send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m22 2-7 20-4-9-9-4Z"/>
+                            <path d="M22 2 11 13"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="chatgpt-style.js"></script>
+    
+    <!-- Temporary compatibility script -->
+    <script>
+        // Hide old interface and show new one after load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.querySelector('.main-container').style.display = 'none';
+                document.querySelector('.ai-interface').style.display = 'flex';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

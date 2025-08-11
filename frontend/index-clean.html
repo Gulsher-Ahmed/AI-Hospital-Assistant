@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City General Hospital - AI Medical Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #343541;
+            color: #d1d5db;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #202123;
+            border-right: 1px solid #4d4d4f;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #4d4d4f;
+        }
+
+        .sidebar-header h3 {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-header p {
+            color: #8e8ea0;
+            font-size: 12px;
+        }
+
+        .departments-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .department-item {
+            padding: 12px 16px;
+            margin: 2px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.1s ease;
+            color: #ececf1;
+            font-size: 14px;
+        }
+
+        .department-item:hover {
+            background: #2a2b32;
+        }
+
+        .department-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .department-desc {
+            font-size: 12px;
+            color: #8e8ea0;
+            line-height: 1.3;
+        }
+
+        /* Main Chat Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #343541;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #4d4d4f;
+            background: #343541;
+        }
+
+        .chat-header h2 {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #8e8ea0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .message {
+            padding: 24px;
+            border-bottom: 1px solid #4d4d4f;
+        }
+
+        .message:last-child {
+            border-bottom: none;
+        }
+
+        .message.user {
+            background: #444654;
+        }
+
+        .message.assistant {
+            background: #343541;
+        }
+
+        .message-content {
+            max-width: 48rem;
+            margin: 0 auto;
+            display: flex;
+            gap: 16px;
+        }
+
+        .message-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .avatar-ai {
+            background: #10a37f;
+            color: white;
+        }
+
+        .avatar-user {
+            background: #5436da;
+            color: white;
+        }
+
+        .message-text {
+            flex: 1;
+            line-height: 1.6;
+            color: #ececf1;
+        }
+
+        .message-text h3 {
+            color: #fff;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .message-text h4 {
+            color: #fff;
+            margin: 16px 0 8px 0;
+            font-size: 14px;
+        }
+
+        .message-text ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .message-text li {
+            margin-bottom: 4px;
+            color: #d1d5db;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 16px 24px 24px;
+            background: #343541;
+            border-top: 1px solid #4d4d4f;
+        }
+
+        .input-container {
+            max-width: 48rem;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            background: #40414f;
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: 1px solid #4d4d4f;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #10a37f;
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ececf1;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            min-height: 24px;
+            max-height: 200px;
+        }
+
+        .message-input::placeholder {
+            color: #8e8ea0;
+        }
+
+        .send-button {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background: #10a37f;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.1s ease;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #0d9268;
+        }
+
+        .send-button:disabled {
+            background: #565869;
+            cursor: not-allowed;
+        }
+
+        /* Appointment Cards */
+        .appointment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .appointment-card {
+            background: #40414f;
+            border: 1px solid #565869;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .appointment-card:hover {
+            border-color: #10a37f;
+            background: #444654;
+        }
+
+        .apt-doctor {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .apt-specialty {
+            color: #8e8ea0;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .apt-time-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .apt-date {
+            color: #d1d5db;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .apt-time {
+            background: #10a37f;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .apt-action {
+            text-align: center;
+            color: #10a37f;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Quick Actions */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .action-item {
+            background: #40414f;
+            border: 1px solid #565869;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            text-align: center;
+            font-size: 12px;
+            color: #d1d5db;
+        }
+
+        .action-item:hover {
+            border-color: #10a37f;
+            background: #444654;
+        }
+
+        /* Typing Animation */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #8e8ea0;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 150px;
+                overflow-y: auto;
+            }
+            
+            .appointment-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>City General Hospital</h3>
+                <p>AI Medical Assistant</p>
+            </div>
+            <div class="departments-list" id="departmentsList">
+                <!-- Departments will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <h2 id="currentDepartment">General Medical Assistant</h2>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>AI Assistant Online</span>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        <div class="message-avatar avatar-ai">AI</div>
+                        <div class="message-text" id="welcomeMessage">
+                            <!-- Welcome message will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            class="message-input" 
+                            placeholder="Ask about medical conditions, book appointments, or get health advice..."
+                            rows="1"
+                        ></textarea>
+                        <button id="sendButton" class="send-button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDepartment = null;
+        let isTyping = false;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDepartments();
+            showWelcomeMessage();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            });
+
+            // Send message on Enter (not Shift+Enter)
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            sendButton.addEventListener('click', sendMessage);
+        }
+
+        async function loadDepartments() {
+            try {
+                const response = await fetch('/api/departments');
+                const departments = await response.json();
+                renderDepartments(departments);
+            } catch (error) {
+                console.error('Error loading departments:', error);
+            }
+        }
+
+        function renderDepartments(departments) {
+            const departmentsList = document.getElementById('departmentsList');
+            departmentsList.innerHTML = departments.map(dept => `
+                <div class="department-item" onclick="selectDepartment('${dept.name}')">
+                    <div class="department-name">${dept.name}</div>
+                    <div class="department-desc">${dept.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectDepartment(deptName) {
+            currentDepartment = deptName;
+            document.getElementById('currentDepartment').textContent = deptName;
+            
+            // Clear messages and show department welcome
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+            
+            addMessage('assistant', `Hello! I'm your AI assistant for ${deptName}. How can I help you today?`);
+        }
+
+        function showWelcomeMessage() {
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            welcomeMessage.innerHTML = `
+                <h3>Welcome to City General Hospital</h3>
+                <p>I'm your AI medical assistant, here to help you with:</p>
+                <div class="actions-grid">
+                    <div class="action-item" onclick="sendPredefinedMessage('I need to book an appointment')">
+                        Book Appointments
+                    </div>
+                    <div class="action-item" onclick="sendPredefinedMessage('What are the symptoms of diabetes?')">
+                        Medical Information
+                    </div>
+                    <div class="action-item" onclick="sendPredefinedMessage('What services does the hospital provide?')">
+                        Hospital Services
+                    </div>
+                    <div class="action-item" onclick="sendPredefinedMessage('What are your visiting hours?')">
+                        General Inquiries
+                    </div>
+                </div>
+                <p style="margin-top: 16px; font-size: 14px; color: #8e8ea0;">
+                    Click on a department in the sidebar for specialized assistance, or ask me anything about healthcare.
+                </p>
+            `;
+        }
+
+        function sendPredefinedMessage(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message || isTyping) return;
+            
+            // Add user message
+            addMessage('user', message);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        message: message,
+                        department: currentDepartment 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                hideTypingIndicator();
+                
+                if (data.response) {
+                    addMessage('assistant', data.response);
+                } else if (data.message) {
+                    addMessage('assistant', data.message);
+                } else {
+                    addMessage('assistant', 'I apologize, but I encountered an error. Please try again.');
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('assistant', 'I apologize, but I encountered an error. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        function addMessage(sender, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatarClass = sender === 'user' ? 'avatar-user' : 'avatar-ai';
+            const avatarText = sender === 'user' ? 'You' : 'AI';
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar ${avatarClass}">${avatarText}</div>
+                    <div class="message-text">${formatMessage(content)}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatMessage(content) {
+            // Handle appointment data
+            if (typeof content === 'object' && content.appointments) {
+                return formatAppointments(content);
+            }
+            
+            // Handle regular text with basic formatting
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function formatAppointments(data) {
+            let html = `<h4>${data.message}</h4>`;
+            
+            if (data.appointments && data.appointments.length > 0) {
+                html += '<div class="appointment-grid">';
+                data.appointments.forEach(apt => {
+                    html += `
+                        <div class="appointment-card" onclick="bookAppointment('${apt.id}', '${apt.doctor}', '${apt.time}')">
+                            <div class="apt-doctor">${apt.doctor}</div>
+                            <div class="apt-specialty">${apt.specialty}</div>
+                            <div class="apt-time-info">
+                                <div class="apt-date">${apt.date}</div>
+                                <div class="apt-time">${apt.time}</div>
+                            </div>
+                            <div class="apt-action">Click to book this appointment</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            return html;
+        }
+
+        function bookAppointment(aptId, doctor, time) {
+            addMessage('user', `I want to book the appointment with ${doctor} at ${time}`);
+            
+            // Simulate booking process
+            showTypingIndicator();
+            setTimeout(() => {
+                hideTypingIndicator();
+                addMessage('assistant', `Great! I've initiated the booking process for your appointment with ${doctor} at ${time}. Please provide your contact information to complete the booking.`);
+            }, 2000);
+        }
+
+        function showTypingIndicator() {
+            if (isTyping) return;
+            isTyping = true;
+            
+            const chatMessages = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar avatar-ai">AI</div>
+                    <div class="message-text">
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            isTyping = false;
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Call Center - Real-Time Streaming</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 25%, #667eea 50%, #764ba2 75%, #f093fb 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 30px rgba(0,0,0,0.4);
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            font-weight: 400;
+            text-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 20px;
+            border-radius: 25px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Chat Container */
+        .chat-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 25px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(30px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 75vh;
+            min-height: 650px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Chat Header */
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+        }
+
+        .agent-info {
+            background: rgba(255, 255, 255, 0.25);
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 2;
+            position: relative;
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            padding: 35px;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
+            position: relative;
+        }
+
+        .messages-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(to bottom, rgba(248, 250, 252, 1), rgba(248, 250, 252, 0));
+            z-index: 1;
+        }
+
+        .message {
+            margin-bottom: 25px;
+            display: flex;
+            animation: slideIn 0.4s ease-out;
+            position: relative;
+            z-index: 2;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 18px 24px;
+            border-radius: 25px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            backdrop-filter: blur(10px);
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .message.ai .message-bubble {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1f2937;
+            border-bottom-left-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-text {
+            line-height: 1.6;
+            font-size: 1.05rem;
+            font-weight: 400;
+        }
+
+        .message-time {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        .agent-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            display: inline-block;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Enhanced Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 24px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            border-bottom-left-radius: 8px;
+            border-left: 4px solid #667eea;
+            max-width: 75%;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .typing-dot {
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        .typing-text {
+            color: #667eea;
+            font-style: italic;
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        /* Streaming Animation */
+        .streaming-text {
+            border-right: 3px solid #667eea;
+            animation: blink 1s infinite;
+        }
+
+        .streaming-char {
+            opacity: 0;
+            animation: charAppear 0.1s ease-out forwards;
+        }
+
+        @keyframes charAppear {
+            to { opacity: 1; }
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            padding: 25px 35px;
+            background: rgba(248, 250, 252, 0.8);
+            border-top: 1px solid rgba(226, 232, 240, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .quick-actions-title {
+            font-size: 1rem;
+            color: #475569;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .quick-action {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            padding: 15px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+
+        .quick-action:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+
+        .quick-action-icon {
+            font-size: 1.4rem;
+        }
+
+        /* Enhanced Input Area */
+        .input-area {
+            padding: 25px 35px;
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 1px solid rgba(226, 232, 240, 0.8);
+            backdrop-filter: blur(20px);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 18px;
+            align-items: flex-end;
+            background: rgba(248, 250, 252, 0.8);
+            padding: 20px 25px;
+            border-radius: 30px;
+            border: 2px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-container:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .message-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 1.05rem;
+            line-height: 1.5;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+            font-family: inherit;
+            font-weight: 400;
+        }
+
+        .message-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .send-button {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.08);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .input-hint {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes blink {
+            0%, 50% { border-color: #667eea; }
+            51%, 100% { border-color: transparent; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.connected {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .chat-container {
+                height: 80vh;
+                border-radius: 20px;
+            }
+            
+            .chat-header, .input-area, .quick-actions {
+                padding: 20px 25px;
+            }
+            
+            .messages-container {
+                padding: 25px;
+            }
+            
+            .quick-actions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .message-bubble {
+                max-width: 85%;
+            }
+        }
+
+        /* Enhanced Scrollbar */
+        .messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.8);
+            border-radius: 4px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.8);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">🔄 Connecting...</div>
+    
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚀 AI Call Center</h1>
+            <p>Experience the future of AI conversations with real-time streaming responses</p>
+            <div class="feature-badge">✨ Live Streaming • Real-time • Multi-Agent AI</div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span style="font-weight: 600;">Connected & Ready</span>
+                    <span style="opacity: 0.8; margin-left: 15px;">Session: <span id="sessionId">Loading...</span></span>
+                </div>
+                <div class="agent-info" id="agentInfo" style="display: none;">
+                    <span id="agentEmoji">🤖</span>
+                    <span id="agentName">AI Assistant</span>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- Welcome message -->
+                <div class="message ai">
+                    <div class="message-bubble">
+                        <div class="agent-badge">🎯 System</div>
+                        <div class="message-text">
+                            👋 Welcome to the future of AI conversations! I'm your intelligent assistant ready to help with appointments, HR questions, and general support. Watch as my responses stream in real-time, creating a natural conversation flow. Try asking me anything!
+                        </div>
+                        <div class="message-time" id="welcomeTime"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="quick-actions-title">💡 Quick Actions - Try These!</div>
+                <div class="quick-actions-grid">
+                    <div class="quick-action" onclick="sendQuickMessage('I want to book a doctor appointment for next week')">
+                        <span class="quick-action-icon">📅</span>
+                        <span>Book Appointment</span>
+                    </div>
+                    <div class="quick-action" onclick="sendQuickMessage('I have questions about company HR policies and benefits')">
+                        <span class="quick-action-icon">👥</span>
+                        <span>HR Questions</span>
+                    </div>
+                    <div class="quick-action" onclick="sendQuickMessage('What are your office hours and contact information?')">
+                        <span class="quick-action-icon">⏰</span>
+                        <span>Office Hours</span>
+                    </div>
+                    <div class="quick-action" onclick="sendQuickMessage('I need general help and information')">
+                        <span class="quick-action-icon">💬</span>
+                        <span>General Help</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea 
+                        id="messageInput" 
+                        class="message-input" 
+                        placeholder="Type your message and watch the AI respond in real-time..."
+                        rows="1"
+                    ></textarea>
+                    <button class="send-button" id="sendButton" onclick="sendMessage()">
+                        ✈️
+                    </button>
+                </div>
+                <div class="input-hint">
+                    Press Enter to send • Shift+Enter for new line • Experience live AI streaming responses!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        let messages = [];
+        let isLoading = false;
+        let currentStreamingMessage = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set session ID
+            document.getElementById('sessionId').textContent = sessionId.split('-')[1];
+            
+            // Set welcome time
+            document.getElementById('welcomeTime').textContent = formatTime(new Date());
+            
+            // Setup input handlers
+            const input = document.getElementById('messageInput');
+            input.addEventListener('keydown', handleKeyPress);
+            input.addEventListener('input', autoResize);
+            
+            // Test backend connection
+            testConnection();
+        });
+
+        // Test backend connection
+        async function testConnection() {
+            const statusElement = document.getElementById('connectionStatus');
+            try {
+                const response = await fetch('http://localhost:3001/health');
+                if (response.ok) {
+                    statusElement.textContent = '✅ Connected';
+                    statusElement.className = 'connection-status connected';
+                    setTimeout(() => {
+                        statusElement.style.opacity = '0';
+                        setTimeout(() => statusElement.style.display = 'none', 300);
+                    }, 2000);
+                } else {
+                    throw new Error('Backend not responding');
+                }
+            } catch (error) {
+                statusElement.textContent = '❌ Backend Offline';
+                statusElement.className = 'connection-status disconnected';
+            }
+        }
+
+        // Auto-resize textarea
+        function autoResize() {
+            const textarea = document.getElementById('messageInput');
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        // Handle key press
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Format time
+        function formatTime(timestamp) {
+            return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Get agent info
+        function getAgentInfo(agent) {
+            const agentMap = {
+                'greeting': { name: 'Welcome Agent', emoji: '👋' },
+                'appointment': { name: 'Appointments', emoji: '📅' },
+                'hr': { name: 'HR Support', emoji: '👥' },
+                'closing': { name: 'Support', emoji: '✨' },
+                'fallback': { name: 'General Assistant', emoji: '🤖' },
+                'system': { name: 'System', emoji: '🎯' },
+                'error': { name: 'Error Handler', emoji: '⚠️' }
+            };
+            
+            return agentMap[agent] || { name: 'AI Assistant', emoji: '🤖' };
+        }
+
+        // Update agent info
+        function updateAgentInfo(agent) {
+            const agentInfo = getAgentInfo(agent);
+            const agentInfoDiv = document.getElementById('agentInfo');
+            const agentEmoji = document.getElementById('agentEmoji');
+            const agentName = document.getElementById('agentName');
+            
+            agentEmoji.textContent = agentInfo.emoji;
+            agentName.textContent = agentInfo.name;
+            agentInfoDiv.style.display = 'flex';
+        }
+
+        // Add user message
+        function addUserMessage(text) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `
+                <div class="message-bubble">
+                    <div class="message-text">${escapeHtml(text)}</div>
+                    <div class="message-time">${formatTime(new Date())}</div>
+                </div>
+            `;
+            container.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Add typing indicator
+        function addTypingIndicator() {
+            const container = document.getElementById('messagesContainer');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                    <div class="typing-text">AI is processing your request...</div>
+                </div>
+            `;
+            container.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Create streaming message
+        function createStreamingMessage(agent) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai';
+            messageDiv.id = 'streamingMessage';
+            
+            const agentInfo = getAgentInfo(agent);
+            messageDiv.innerHTML = `
+                <div class="message-bubble">
+                    <div class="agent-badge">${agentInfo.emoji} ${agentInfo.name}</div>
+                    <div class="message-text streaming-text" id="streamingText"></div>
+                    <div class="message-time">${formatTime(new Date())}</div>
+                </div>
+            `;
+            container.appendChild(messageDiv);
+            scrollToBottom();
+            return messageDiv;
+        }
+
+        // Stream text character by character
+        function streamText(text, speed = 25) {
+            return new Promise((resolve) => {
+                const textElement = document.getElementById('streamingText');
+                if (!textElement) {
+                    resolve();
+                    return;
+                }
+
+                let index = 0;
+                textElement.textContent = '';
+                
+                const interval = setInterval(() => {
+                    if (index < text.length) {
+                        const char = text[index];
+                        const span = document.createElement('span');
+                        span.className = 'streaming-char';
+                        span.textContent = char;
+                        textElement.appendChild(span);
+                        index++;
+                        scrollToBottom();
+                    } else {
+                        clearInterval(interval);
+                        textElement.classList.remove('streaming-text');
+                        resolve();
+                    }
+                }, speed);
+            });
+        }
+
+        // Finish streaming message
+        function finishStreamingMessage() {
+            const streamingMessage = document.getElementById('streamingMessage');
+            if (streamingMessage) {
+                streamingMessage.id = '';
+                const textElement = streamingMessage.querySelector('.streaming-text');
+                if (textElement) {
+                    textElement.classList.remove('streaming-text');
+                }
+            }
+        }
+
+        // Scroll to bottom
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Send quick message
+        function sendQuickMessage(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        // Send message with streaming
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const message = input.value.trim();
+            
+            if (!message || isLoading) return;
+            
+            // Add user message
+            addUserMessage(message);
+            messages.push({ text: message, sender: 'user', timestamp: new Date() });
+            
+            // Clear input and disable
+            input.value = '';
+            input.style.height = 'auto';
+            isLoading = true;
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<div style="width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>';
+            
+            // Show typing indicator
+            addTypingIndicator();
+            
+            try {
+                // Send to backend with regular endpoint (fallback to streaming simulation)
+                const response = await fetch('http://localhost:3001/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        sessionId: sessionId,
+                        conversationHistory: messages
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                removeTypingIndicator();
+                
+                // Update agent info
+                updateAgentInfo(data.agent);
+                
+                // Create streaming message and stream the response
+                createStreamingMessage(data.agent);
+                await streamText(data.message, 20 + Math.random() * 30); // Variable speed for realism
+                finishStreamingMessage();
+                
+                // Add to messages history
+                messages.push({ 
+                    text: data.message, 
+                    sender: 'ai', 
+                    agent: data.agent, 
+                    timestamp: new Date() 
+                });
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                removeTypingIndicator();
+                
+                // Create error message with streaming
+                createStreamingMessage('error');
+                await streamText("I apologize, but I'm experiencing technical difficulties. Please ensure the backend server is running on port 3001 and try again. If the problem persists, please refresh the page.", 25);
+                finishStreamingMessage();
+            } finally {
+                // Re-enable input
+                isLoading = false;
+                sendButton.disabled = false;
+                sendButton.innerHTML = '✈️';
+                input.focus();
+            }
+        }
+    </script>
+</body>
+</html>

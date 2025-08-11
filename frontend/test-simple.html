@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Call Center - Simple Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .chat-box {
+            height: 400px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+            border-radius: 5px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .user-message {
+            background: #007bff;
+            color: white;
+            text-align: right;
+        }
+        
+        .ai-message {
+            background: #e9ecef;
+            color: #333;
+        }
+        
+        .input-section {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #messageInput {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        #sendButton {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #sendButton:hover {
+            background: #0056b3;
+        }
+        
+        #sendButton:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Call Center - Simple Test Interface</h1>
+        
+        <div id="chatBox" class="chat-box">
+            <div class="message ai-message">
+                👋 Welcome! I'm ready to help you with appointments, HR questions, or general inquiries. What can I do for you today?
+            </div>
+        </div>
+        
+        <div class="input-section">
+            <input type="text" id="messageInput" placeholder="Type your message here..." 
+                   onkeypress="if(event.key==='Enter') sendMessage()">
+            <button id="sendButton" onclick="sendMessage()">Send</button>
+        </div>
+        
+        <div id="status" class="status">Ready</div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const status = document.getElementById('status');
+        
+        // Generate a unique session ID
+        const sessionId = 'session_' + Date.now();
+        
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+            messageDiv.textContent = content;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage(message, true);
+            messageInput.value = '';
+            
+            // Disable input while processing
+            sendButton.disabled = true;
+            status.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        sessionId: sessionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Add AI response to chat
+                addMessage(data.message || 'Sorry, I received an empty response.');
+                status.textContent = `Agent: ${data.agent || 'unknown'}`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('❌ Sorry, there was an error connecting to the server. Please try again.');
+                status.textContent = 'Error occurred';
+            }
+            
+            // Re-enable input
+            sendButton.disabled = false;
+            messageInput.focus();
+        }
+        
+        // Focus on input when page loads
+        messageInput.focus();
+        
+        // Test backend connection on load
+        async function testConnection() {
+            try {
+                const response = await fetch('http://localhost:3001/health');
+                if (response.ok) {
+                    status.textContent = 'Connected to backend ✅';
+                } else {
+                    status.textContent = 'Backend connection issue ⚠️';
+                }
+            } catch (error) {
+                status.textContent = 'Cannot connect to backend ❌';
+            }
+        }
+        
+        testConnection();
+    </script>
+</body>
+</html>
