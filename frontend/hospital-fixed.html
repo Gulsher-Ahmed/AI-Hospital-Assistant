@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City General Hospital - AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: #4ade80;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .header-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Main Chat Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .chat-section {
+            flex: 2;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .quick-action-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        /* Chat Messages */
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            min-height: 400px;
+            max-height: 500px;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .user-message {
+            justify-content: flex-end;
+        }
+
+        .ai-message {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .user-message .message-content {
+            background: #007bff;
+            color: white;
+        }
+
+        .ai-message .message-content {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        .message-text {
+            line-height: 1.4;
+        }
+
+        .message-timestamp {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+
+        /* Input Area */
+        .input-container {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #message-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        #send-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        #send-button:hover {
+            background: #0056b3;
+        }
+
+        /* Typing Animation */
+        .typing-animation {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+        }
+
+        .typing-animation span {
+            width: 0.5rem;
+            height: 0.5rem;
+            background: #666;
+            border-radius: 50%;
+            animation: typing 1.5s infinite;
+        }
+
+        .typing-animation span:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .typing-animation span:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Appointment Slots */
+        .appointment-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .appointment-slot {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .appointment-slot:hover {
+            background: #007bff;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .slot-time {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .slot-date {
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .slot-doctor {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                order: -1;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">H</div>
+        <div class="header-title">City General Hospital - AI Assistant</div>
+    </div>
+
+    <div class="main-container">
+        <div class="chat-section">
+            <div id="chat-container"></div>
+            
+            <div class="input-container">
+                <input type="text" id="message-input" placeholder="Type your message here..." autocomplete="off">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h3>Quick Actions</h3>
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="hospitalAI.getHospitalServices()">
+                    🏥 Hospital Services
+                </button>
+                <button class="quick-action-btn" onclick="hospitalAI.bookAppointment()">
+                    📅 Book Appointment
+                </button>
+                <button class="quick-action-btn" onclick="hospitalAI.getEmergencyHelp()">
+                    🚨 Emergency Help
+                </button>
+                <button class="quick-action-btn" onclick="hospitalAI.findSpecialist()">
+                    👨‍⚕️ Find Specialist
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden departments container for future use -->
+    <div id="departments-container" style="display: none;"></div>
+
+    <script>
+        // Fixed: 2025-08-11 - Working Conversation Context
+        class HospitalAI {
+            constructor() {
+                this.apiBase = '/api';
+                this.chatContainer = document.getElementById('chat-container');
+                this.messageInput = document.getElementById('message-input');
+                this.sendButton = document.getElementById('send-button');
+                this.isTyping = false;
+                this.currentDepartment = null;
+                this.conversationHistory = []; // Store conversation history
+
+                this.init();
+            }
+
+            init() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                this.showWelcomeMessage();
+            }
+
+            showWelcomeMessage() {
+                this.addMessage('ai', "Hello! Welcome to City General Hospital. I'm here to help you with appointments, find doctors, or answer any questions about our services. How may I assist you today?");
+            }
+
+            async sendMessage(customMessage) {
+                const message = customMessage || this.messageInput.value.trim();
+                if (!message || this.isTyping) return;
+
+                // Add user message to chat
+                this.addMessage('user', message);
+                if (!customMessage) {
+                    this.messageInput.value = '';
+                }
+
+                // Show typing indicator
+                this.showTypingIndicator();
+
+                try {
+                    // Prepare context with conversation history
+                    const contextToSend = {
+                        department: this.currentDepartment,
+                        conversationHistory: this.conversationHistory
+                    };
+                    
+                    console.log('🚀 Sending context:', JSON.stringify(contextToSend, null, 2));
+                    
+                    const response = await fetch(`${this.apiBase}/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            context: contextToSend
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    this.hideTypingIndicator();
+                    
+                    let aiResponse = '';
+                    if (data.response) {
+                        // Handle different response types
+                        if (typeof data.response === 'object' && data.response.type === 'appointment_slots') {
+                            this.addMessageWithSlots(data.response.message, data.response.slots);
+                            aiResponse = data.response.message;
+                        } else {
+                            this.addMessage('ai', data.response);
+                            aiResponse = data.response;
+                        }
+                    } else {
+                        aiResponse = 'I apologize, but I\'m having trouble processing your request right now. Please try again.';
+                        this.addMessage('ai', aiResponse);
+                    }
+
+                    // Store conversation with the AI response
+                    this.conversationHistory.push({
+                        user: message,
+                        ai: aiResponse,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    // Keep only last 10 exchanges
+                    if (this.conversationHistory.length > 10) {
+                        this.conversationHistory = this.conversationHistory.slice(-10);
+                    }
+
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    console.error('Error sending message:', error);
+                    const errorMessage = 'I\'m sorry, but I\'m having connection issues. Please try again in a moment.';
+                    this.addMessage('ai', errorMessage);
+                    
+                    // Store conversation even on error
+                    this.conversationHistory.push({
+                        user: message,
+                        ai: errorMessage,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            }
+
+            addMessage(sender, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                
+                const timestamp = new Date().toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-text">${this.formatMessage(content)}</div>
+                        <div class="message-timestamp">${timestamp}</div>
+                    </div>
+                `;
+
+                this.chatContainer.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            addMessageWithSlots(message, slots) {
+                this.addMessage('ai', message);
+                
+                if (slots && slots.length > 0) {
+                    const slotsDiv = document.createElement('div');
+                    slotsDiv.className = 'appointment-slots';
+                    
+                    slotsDiv.innerHTML = slots.map(slot => `
+                        <div class="appointment-slot" onclick="hospitalAI.bookSlot('${slot.time}', '${slot.date}', '${slot.doctor}')">
+                            <div class="slot-time">${slot.time}</div>
+                            <div class="slot-date">${slot.date}</div>
+                            <div class="slot-doctor">Dr. ${slot.doctor}</div>
+                        </div>
+                    `).join('');
+                    
+                    this.chatContainer.appendChild(slotsDiv);
+                    this.scrollToBottom();
+                }
+            }
+
+            bookSlot(time, date, doctor) {
+                this.addMessage('user', `I'd like to book the ${time} appointment on ${date} with ${doctor}`);
+                this.addMessage('ai', `Perfect! I've scheduled your appointment for ${time} on ${date} with Dr. ${doctor}. You'll receive a confirmation email shortly. Is there anything else I can help you with?`);
+                
+                // Store the booking in conversation history
+                this.conversationHistory.push({
+                    user: `I'd like to book the ${time} appointment on ${date} with ${doctor}`,
+                    ai: `Perfect! I've scheduled your appointment for ${time} on ${date} with Dr. ${doctor}. You'll receive a confirmation email shortly. Is there anything else I can help you with?`,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            formatMessage(content) {
+                if (typeof content === 'object') {
+                    return content.message || JSON.stringify(content);
+                }
+                return content.replace(/\n/g, '<br>');
+            }
+
+            showTypingIndicator() {
+                if (document.querySelector('.typing-indicator')) return;
+                
+                this.isTyping = true;
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message ai-message typing-indicator';
+                typingDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="typing-animation">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                `;
+                
+                this.chatContainer.appendChild(typingDiv);
+                this.scrollToBottom();
+            }
+
+            hideTypingIndicator() {
+                const typingIndicator = document.querySelector('.typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                this.isTyping = false;
+            }
+
+            scrollToBottom() {
+                this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+            }
+
+            // Quick action methods
+            getHospitalServices() {
+                this.sendMessage("What services do you offer?");
+            }
+
+            bookAppointment() {
+                this.sendMessage("I'd like to book an appointment");
+            }
+
+            getEmergencyHelp() {
+                this.sendMessage("I need emergency help");
+            }
+
+            findSpecialist() {
+                this.sendMessage("I need to find a specialist");
+            }
+        }
+
+        // Initialize the AI assistant when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.hospitalAI = new HospitalAI();
+        });
+    </script>
+</body>
+</html>

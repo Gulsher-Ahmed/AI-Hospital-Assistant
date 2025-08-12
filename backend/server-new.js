@@ -1,19 +1,26 @@
 const express = require('express');
-const cors = require('cors');
+co        // Check for emergency
+        if (isEmergency(message)) {
+            response = await departmentAgents.routeQuery(message, context);
+        }
+        // Check for greeting
+        else if (isGreeting(message)) {
+            response = await departmentAgents.routeQuery(message, context);
+        }
+        // Route to appropriate department specialist
+        else {
+            response = await departmentAgents.routeQuery(message, context);
+        }equire('cors');
 const path = require('path');
 require('dotenv').config();
 
 // Import new AI-driven system
 const llmService = require('./services/llmService');
-const DepartmentAgents = require('./agents/departmentAgents');
-const HospitalDatabase = require('./database/hospitalDB');
+const departmentAgents = require('./agents/departmentAgents-new');
+const hospitalData = require('./database/hospitalData');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Initialize AI-driven system
-const departmentAgents = new DepartmentAgents(llmService);
-const hospitalDB = new HospitalDatabase();
 
 // Middleware
 app.use(cors());
@@ -113,7 +120,7 @@ app.post('/api/search-appointments', async (req, res) => {
 // Get all departments endpoint
 app.get('/api/departments', (req, res) => {
     try {
-        const departments = hospitalDB.getAllDepartments();
+        const departments = Object.values(hospitalData.departments);
         res.json({ departments });
     } catch (error) {
         console.error('❌ Error getting departments:', error);
@@ -130,7 +137,9 @@ app.get('/api/appointments/:department?', (req, res) => {
         const { department } = req.params;
         const { limit = 6 } = req.query;
         
-        const appointments = hospitalDB.getAvailableAppointments(department, parseInt(limit));
+        const appointments = department ? 
+            hospitalData.generateAppointmentSlots(department, 2).slice(0, parseInt(limit)) :
+            hospitalData.generateAppointmentSlots(null, 2).slice(0, parseInt(limit));
         
         res.json({ 
             appointments,

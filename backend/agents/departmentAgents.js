@@ -93,10 +93,24 @@ Be concise and professional.`;
                     suggestedDepartments: this.suggestDepartments('services')
                 };
             } else if (message === 'Book an Appointment') {
+                const currentDate = new Date();
+                const today = currentDate.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                const tomorrow = new Date(currentDate);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowString = tomorrow.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                
                 return {
                     type: 'general_medical',
                     department: null,
-                    message: "Available today: 2:00 PM Cardiology, 3:30 PM Internal Medicine. Call (555) 123-4567 to book.",
+                    message: `Available today (${today}): 2:00 PM Cardiology, 4:00 PM Dermatology. Tomorrow (${tomorrowString}): 9:00 AM Neurology. Call (555) 123-4567 to book.`,
                     showAppointments: true,
                     appointments: this.hospitalDB.getAvailableAppointments(null, 4),
                     suggestedDepartments: []

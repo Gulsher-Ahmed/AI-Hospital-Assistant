@@ -28,15 +28,13 @@ class RouterAgent {
       // Build context-aware routing prompt
       const prompt = this.buildRoutingPrompt(message, session);
       
-      const response = await llmService.generateResponse(
-        'router', 
-        prompt, 
-        {
-          temperature: 0.3, // Lower temperature for more consistent routing decisions
-          max_tokens: 100
-        },
-        session.history || [] // Pass conversation history
-      );
+      // Call generateResponse with correct parameters
+      const response = await llmService.generateResponse(prompt, {
+        session: session,
+        history: session.history || [],
+        temperature: 0.3,
+        max_tokens: 100
+      });
 
       // Parse the JSON response
       const routingDecision = llmService.parseJSONResponse(response);

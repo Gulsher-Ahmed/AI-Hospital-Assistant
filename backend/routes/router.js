@@ -89,13 +89,25 @@ router.post('/chat', async (req, res) => {
 
     conversationSessions.set(sessionId, session);
 
-    res.json({
+    // Prepare response object
+    const response = {
       message: agentResponse.message,
       agent: targetAgent,
       sessionId: sessionId,
       conversationHistory: session.history,
       context: session.context
-    });
+    };
+
+    // Add appointment slots if provided by agent
+    if (agentResponse.slots) {
+      response.response = {
+        type: 'appointment_slots',
+        message: agentResponse.message,
+        slots: agentResponse.slots
+      };
+    }
+
+    res.json(response);
 
   } catch (error) {
     console.error('❌ Chat error:', error);

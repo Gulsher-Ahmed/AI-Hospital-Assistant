@@ -1,4 +1,5 @@
 const llmService = require('../services/llmService');
+const receptionistService = require('../services/llmService-receptionist');
 
 /**
  * Fallback Agent - Handles unclear, unsupported, or problematic requests
@@ -25,6 +26,24 @@ class FallbackAgent {
    */
   async processMessage(message, session) {
     try {
+      // First check if this is a medical/hospital-related query
+      if (this.isMedicalOrHospitalQuery(message)) {
+        console.log('🏥 Routing fallback to medical receptionist service');
+        const response = await receptionistService.generateResponse(message, {
+          conversationHistory: session.history || [],
+          context: session.context || {}
+        });
+        
+        return {
+          message: response,
+          agent: 'MedicalReceptionist',
+          context: {
+            medical_query_handled: true,
+            department: session.context?.department || null
+          }
+        };
+      }
+      
       // Determine the type of fallback response needed
       const fallbackType = this.determineFallbackType(message, session);
       
@@ -68,6 +87,24 @@ class FallbackAgent {
         context: { error: true, emergency_fallback: true }
       };
     }
+  }
+
+  /**
+   * Check if message is medical or hospital-related
+   */
+  isMedicalOrHospitalQuery(message) {
+    if (!message || typeof message !== 'string') return false;
+    
+    const messageLower = message.toLowerCase();
+    const medicalKeywords = [
+      'doctor', 'appointment', 'hospital', 'medical', 'health', 'sick', 'pain', 
+      'symptom', 'medicine', 'prescription', 'clinic', 'emergency', 'surgery',
+      'diabetes', 'blood', 'heart', 'cancer', 'fever', 'headache', 'injury',
+      'treatment', 'therapy', 'diagnosis', 'specialist', 'cardiology', 'neurology',
+      'pediatrics', 'orthopedics', 'dermatology', 'urgent care', 'checkup'
+    ];
+    
+    return medicalKeywords.some(keyword => messageLower.includes(keyword));
   }
 
   /**

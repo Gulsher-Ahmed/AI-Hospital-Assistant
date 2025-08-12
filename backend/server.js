@@ -24,6 +24,14 @@ app.use(express.json());
 // Routes
 app.use('/api', chatRoutes);
 
+// Serve static files from frontend directory
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Serve the main chat interface
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/hospital-fixed.html'));
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'AI Call Center Backend is running' });

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital AI - Context Working</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #1a1a1a;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        .user-message {
+            background: #0084ff;
+            margin-left: 100px;
+            text-align: right;
+        }
+        .ai-message {
+            background: #444;
+            margin-right: 100px;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #333;
+            color: white;
+        }
+        button {
+            padding: 12px 20px;
+            background: #0084ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .debug {
+            margin-top: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>Hospital AI Assistant - With Context Memory</h1>
+        <div id="messages" class="messages"></div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Type your message..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div id="debug" class="debug">Debug info will appear here...</div>
+    </div>
+
+    <script>
+        let conversationHistory = [];
+        
+        function addMessage(sender, content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            messageDiv.textContent = content;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function updateDebug(info) {
+            document.getElementById('debug').textContent = info;
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Add user message to UI
+            addMessage('user', message);
+            input.value = '';
+            
+            // Prepare context with conversation history
+            const contextToSend = {
+                conversationHistory: conversationHistory
+            };
+            
+            updateDebug(`Sending context with ${conversationHistory.length} previous exchanges`);
+            console.log('🚀 Sending context:', JSON.stringify(contextToSend, null, 2));
+            console.log('📦 Full request body:', JSON.stringify({
+                message: message,
+                context: contextToSend
+            }, null, 2));
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        context: contextToSend
+                    })
+                });
+                
+                const data = await response.json();
+                const aiResponse = data.response || 'Sorry, no response from server';
+                
+                // Add AI response to UI
+                addMessage('ai', aiResponse);
+                
+                // Store this exchange in conversation history
+                conversationHistory.push({
+                    user: message,
+                    ai: aiResponse,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Keep only last 10 exchanges
+                if (conversationHistory.length > 10) {
+                    conversationHistory = conversationHistory.slice(-10);
+                }
+                
+                updateDebug(`Conversation history now has ${conversationHistory.length} exchanges`);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('ai', 'Error: Could not connect to server');
+                updateDebug(`Error: ${error.message}`);
+            }
+        }
+        
+        // Send message on Enter key
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Welcome message
+        addMessage('ai', 'Hello! I am your hospital AI assistant. I will remember our conversation. Try saying "My name is [your name]" and then ask "What is my name?"');
+    </script>
+</body>
+</html>

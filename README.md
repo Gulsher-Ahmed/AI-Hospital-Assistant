@@ -129,6 +129,8 @@ You'll see lots of text scrolling - this is normal! Wait for it to finish.
 1. In the `backend` folder, create a new file called `.env`
 2. Open the `.env` file in any text editor (Notepad, VS Code, etc.)
 3. Add this line, replacing `YOUR_API_KEY_HERE` with your actual Groq API key:
+4. I've used this model "https://console.groq.com/docs/model/openai/gpt-oss-120b"
+5- go to the link and get your own APi for "openai/gpt-oss-120b" model
    ```
    GROQ_API_KEY=gsk_your_actual_api_key_here
    PORT=3001

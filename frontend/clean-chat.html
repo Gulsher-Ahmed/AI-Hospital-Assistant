@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital AI - Context Working Version</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #1a1a1a;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        .user-message {
+            background: #0084ff;
+            margin-left: 100px;
+            text-align: right;
+        }
+        .ai-message {
+            background: #444;
+            margin-right: 100px;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #333;
+            color: white;
+        }
+        button {
+            padding: 12px 20px;
+            background: #0084ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .debug {
+            margin-top: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .status {
+            background: #666;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>🏥 Hospital AI Assistant - Context Memory Test</h1>
+        <div class="status" id="status">Ready to chat...</div>
+        <div id="messages" class="messages"></div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Try: 'My name is John' then 'What is my name?'" />
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="clearChat()">Clear</button>
+        </div>
+        <div id="debug" class="debug">Debug: Conversation history will appear here...</div>
+    </div>
+
+    <script>
+        let conversationHistory = [];
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+        
+        function addMessage(sender, content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            messageDiv.textContent = content;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function updateDebug(info) {
+            document.getElementById('debug').innerHTML = `<strong>Debug:</strong> ${info}`;
+        }
+        
+        function clearChat() {
+            document.getElementById('messages').innerHTML = '';
+            conversationHistory = [];
+            updateDebug('Chat cleared. Conversation history reset.');
+            addMessage('ai', 'Hello! I am your hospital AI assistant. I will remember our conversation. Try saying "My name is [your name]" and then ask "What is my name?"');
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Add user message to UI
+            addMessage('user', message);
+            input.value = '';
+            updateStatus('Sending message...');
+            
+            // Prepare context with conversation history
+            const contextToSend = {
+                conversationHistory: conversationHistory
+            };
+            
+            const requestBody = {
+                message: message,
+                context: contextToSend
+            };
+            
+            // Update debug info BEFORE sending
+            updateDebug(`Sending: "${message}" with ${conversationHistory.length} previous exchanges`);
+            
+            // Log everything for debugging
+            console.log('🚀 Sending message:', message);
+            console.log('🚀 Sending context:', contextToSend);
+            console.log('📦 Full request body:', requestBody);
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                updateStatus('Processing response...');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const aiResponse = data.response || 'Sorry, no response from server';
+                
+                // Add AI response to UI
+                addMessage('ai', aiResponse);
+                updateStatus('Response received');
+                
+                // Store this exchange in conversation history
+                conversationHistory.push({
+                    user: message,
+                    ai: aiResponse,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Keep only last 10 exchanges
+                if (conversationHistory.length > 10) {
+                    conversationHistory = conversationHistory.slice(-10);
+                }
+                
+                updateDebug(`Response: "${aiResponse.substring(0, 50)}..." | History: ${conversationHistory.length} exchanges`);
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                addMessage('ai', `Error: ${error.message}`);
+                updateStatus('Error occurred');
+                updateDebug(`Error: ${error.message}`);
+            }
+        }
+        
+        // Send message on Enter key
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Initialize
+        window.addEventListener('load', function() {
+            addMessage('ai', 'Hello! I am your hospital AI assistant. I will remember our conversation. Try saying "My name is [your name]" and then ask "What is my name?"');
+            updateDebug('Chat initialized. Ready to test conversation memory!');
+        });
+    </script>
+</body>
+</html>

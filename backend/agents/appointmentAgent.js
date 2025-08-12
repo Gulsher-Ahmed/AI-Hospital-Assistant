@@ -1,4 +1,5 @@
 const llmService = require('../services/llmService');
+const receptionistService = require('../services/llmService-receptionist');
 const DatabaseService = require('../services/databaseService');
 const fs = require('fs').promises;
 const path = require('path');
@@ -23,36 +24,44 @@ class AppointmentAgent {
    */
   async processMessage(message, session) {
     try {
-      // Load current appointment data
-      const appointmentData = await this.loadAppointmentData();
+      console.log('🏥 AppointmentAgent processing:', message);
       
-      // Determine the type of appointment request
-      const requestType = this.determineRequestType(message);
+      // Use the enhanced medical receptionist service for appointment-related queries
+      const response = await receptionistService.generateResponse(message, {
+        conversationHistory: session.history || [],
+        context: session.context || {},
+        department: session.context?.department || null,
+        appointmentContext: true
+      });
       
-      let response;
-      let context = {};
-
-      switch (requestType) {
-        case 'check_availability':
-          response = await this.handleAvailabilityCheck(message, appointmentData, session);
-          break;
-        case 'book_appointment':
-          response = await this.handleBookingRequest(message, appointmentData, session);
-          break;
-        case 'cancel_appointment':
-          response = await this.handleCancellationRequest(message, appointmentData, session);
-          break;
-        case 'reschedule_appointment':
-          response = await this.handleRescheduleRequest(message, appointmentData, session);
-          break;
-        default:
-          response = await this.handleGeneralAppointmentQuery(message, appointmentData, session);
+      // Check if this should return appointment slots
+      const shouldShowSlots = this.shouldReturnAppointmentSlots(message, session);
+      
+      if (shouldShowSlots) {
+        // Generate appointment slots using the receptionist service
+        const slots = receptionistService.generateContextualAppointmentSlots(
+          session.context?.preferredDepartment || 'General Practice',
+          session.context?.urgencyLevel || 'routine'
+        );
+        
+        return {
+          message: response,
+          agent: this.name,
+          context: { 
+            appointment_slots_provided: true,
+            department: session.context?.preferredDepartment || 'General Practice'
+          },
+          slots: slots // Add slots for frontend to display
+        };
       }
-
+      
       return {
-        message: response.message,
+        message: response,
         agent: this.name,
-        context: { ...context, ...response.context }
+        context: { 
+          appointment_query_handled: true,
+          department: session.context?.department || null
+        }
       };
     } catch (error) {
       console.error(`❌ ${this.name} error:`, error);
@@ -62,6 +71,33 @@ class AppointmentAgent {
         context: { error: true }
       };
     }
+  }
+
+  /**
+   * Check if we should return appointment slots
+   */
+  shouldReturnAppointmentSlots(message, session) {
+    const messageLower = message.toLowerCase();
+    const recentHistory = session.history?.slice(-4) || [];
+    
+    // Show slots if user has specified a department or doctor type
+    const hasDepartmentContext = session.context?.preferredDepartment || 
+                                 messageLower.includes('cardiologist') ||
+                                 messageLower.includes('neurologist') ||
+                                 messageLower.includes('pediatrician') ||
+                                 messageLower.includes('dermatologist') ||
+                                 messageLower.includes('orthopedic');
+    
+    // Show slots if conversation has progressed enough
+    const hasEnoughContext = recentHistory.length >= 2;
+    
+    // Show slots for direct appointment requests
+    const isDirectRequest = messageLower.includes('book') || 
+                           messageLower.includes('schedule') || 
+                           messageLower.includes('appointment') ||
+                           messageLower.includes('see a doctor');
+    
+    return hasDepartmentContext && (hasEnoughContext || isDirectRequest);
   }
 
   /**
